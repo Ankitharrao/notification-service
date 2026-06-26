@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 
 import { env } from './config/env'
+import healthRoutes from './api/routes/health'
 
 
 
@@ -20,7 +21,7 @@ const server = Fastify({
 
 const start = async () => {
   try {
-    // ── Register plugins FIRST ──────────────────
+    
     // Plugins must be registered before routes
     // so they're available when routes execute
     await server.register(cors, {
@@ -32,15 +33,8 @@ const start = async () => {
       secret: env.JWT_SECRET 
     })
 
-    // ── Register routes AFTER plugins ──────────
-    server.get('/health', async () => {
-      return {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        service: 'notification-service',
-        environment: env.NODE_ENV
-      }
-    })
+    
+    await server.register(healthRoutes)
 
     // ── Start listening
     const port = Number(env.PORT) 
