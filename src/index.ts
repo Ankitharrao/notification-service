@@ -1,19 +1,20 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
-import dotenv from 'dotenv'
 
-dotenv.config()
+import { env } from './config/env'
+
+
 
 const server = Fastify({
   logger: {
-    transport: {
+    transport: env.NODE_ENV === 'development' ? {
       target: 'pino-pretty',
       options: {
         translateTime: 'HH:MM:ss Z',
         ignore: 'pid,hostname'
       }
-    }
+    } : undefined
   }
 })
 
@@ -23,12 +24,12 @@ const start = async () => {
     // Plugins must be registered before routes
     // so they're available when routes execute
     await server.register(cors, {
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+      origin: env.ALLOWED_ORIGINS.length > 0 ? env.ALLOWED_ORIGINS : '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE']
     })
 
     await server.register(jwt, {
-      secret: process.env.JWT_SECRET || 'dev-secret-change-in-production'
+      secret: env.JWT_SECRET 
     })
 
     // ── Register routes AFTER plugins ──────────
@@ -36,13 +37,14 @@ const start = async () => {
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
-        service: 'notification-service'
+        service: 'notification-service',
+        environment: env.NODE_ENV
       }
     })
 
     // ── Start listening
-    const port = Number(process.env.PORT) || 3000
-    const host = process.env.HOST || '0.0.0.0'
+    const port = Number(env.PORT) 
+    const host = env.HOST 
 
     await server.listen({ port, host })
 
