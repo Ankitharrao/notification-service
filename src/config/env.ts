@@ -13,6 +13,9 @@ interface EnvConfig {
   JWT_SECRET: string
   ALLOWED_ORIGINS: string[]
   NODE_ENV: 'development' | 'production' | 'test'
+  DATABASE_URL: string
+  REDIS_URL: string
+  KAFKA_BROKER: string
 }
 
 const getEnvVar = (key: string, required: boolean = true): string => {
@@ -37,4 +40,7 @@ export const env: EnvConfig = {
   JWT_SECRET: getEnvVar('JWT_SECRET'),
   ALLOWED_ORIGINS: getEnvVar('ALLOWED_ORIGINS', false).split(',').filter(Boolean),
   NODE_ENV: (getEnvVar('NODE_ENV', false) || 'development') as EnvConfig['NODE_ENV'],
+  DATABASE_URL: getEnvVar('DATABASE_URL'),
+  REDIS_URL: getEnvVar('REDIS_URL'),
+  KAFKA_BROKER: getEnvVar('KAFKA_BROKER'),
 }
