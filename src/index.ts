@@ -4,6 +4,7 @@ import jwt from '@fastify/jwt'
 
 import { env } from './config/env'
 import healthRoutes from './api/routes/health'
+import { disconnectDatabase } from './config/database'
 
 
 
@@ -47,5 +48,14 @@ const start = async () => {
     process.exit(1)
   }
 }
+const shutdown = async () => {
+  server.log.info('Shutting down gracefully...')
+  await disconnectDatabase()
+  await server.close()
+  process.exit(0)
+}
+
+process.on('SIGINT', shutdown)   // Ctrl+C
+process.on('SIGTERM', shutdown)  // Docker/Kubernetes stop signal
 
 start()

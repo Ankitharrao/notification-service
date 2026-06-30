@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+ 
+}
+
+// ── Enums ─────────────────────────────────────
+
+enum Channel {
+  EMAIL
+  SMS
+  PUSH
+  INAPP
+}
+
+enum Priority {
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  SUCCESS
+  FAILED
+  BOUNCED
+  RATE_LIMITED
+}
+
+// ── Models ────────────────────────────────────
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  phone       String?
+  fcmToken    String?  @map("fcm_token")
+  timezone    String   @default("UTC")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  preferences   UserPreference[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model UserPreference {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  channel         Channel
+  enabled         Boolean  @default(true)
+  quietHoursStart String?  @map("quiet_hours_start")
+  quietHoursEnd   String?  @map("quiet_hours_end")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, channel])
+  @@map("user_preferences")
+}
+
+model Template {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  channel   Channel
+  subject   String?
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  notifications Notification[]
+
+  @@map("templates")
+}
+
+model Notification {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+  templateId      String              @map("template_id")
+  channel         Channel
+  priority        Priority            @default(NORMAL)
+  status          NotificationStatus  @default(PENDING)
+  payload         Json
+  idempotencyKey  String?             @unique @map("idempotency_key")
+  scheduledAt     DateTime?           @map("scheduled_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  user         User           @relation(fields: [userId], references: [id])
+  template     Template       @relation(fields: [templateId], references: [id])
+  deliveryLogs DeliveryLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("notifications")
+}
+
+model DeliveryLog {
+  id             String         @id @default(uuid())
+  notificationId String         @map("notification_id")
+  attempt        Int            @default(1)
+  status         DeliveryStatus
+  provider       String
+  errorMessage   String?        @map("error_message")
+  deliveredAt    DateTime?      @map("delivered_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@index([notificationId])
+  @@map("delivery_logs")
+}
